@@ -130,7 +130,7 @@ public sealed class RaidIntelPlugin : BaseUnityPlugin
         InspectResizeWindow = t.Bind(
             "3. Inspect", "InspectResizeWindow", true,
             catInspect, "窄长检视窗",
-            "原版检视窗固定为 670×500。开启后改为下方设置的宽度与屏幕高度占比（带配件的武器仍保持原版所需的最小宽度），多出的高度用于显示描述与情报卡片。");
+            "原版检视窗默认以 670×500 打开。开启后默认改为下方设置的宽度与屏幕高度占比打开（带配件的武器仍保持原版所需的最小宽度），多出的高度用于显示描述与情报卡片；打开后仍可拖动窗口边缘自由缩放。");
         InspectWindowWidth = t.Bind(
             "3. Inspect", "InspectWindowWidth", 460,
             catInspect, "检视窗宽度",
