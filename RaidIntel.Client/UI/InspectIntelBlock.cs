@@ -39,6 +39,7 @@ internal sealed class InspectIntelBlock : MonoBehaviour
     private static readonly Color32 StActive = new(242, 184, 75, 255);
     private static readonly Color32 StAvailable = new(216, 200, 122, 255);
     private static readonly Color32 StNextLevel = new(108, 200, 232, 255);
+    private static readonly Color32 StFavoriteCraft = new(197, 156, 230, 255);
     private static readonly Color32 StFuture = new(138, 148, 158, 255);
 
     private const string HexMuted = "#7C858B";
@@ -70,6 +71,7 @@ internal sealed class InspectIntelBlock : MonoBehaviour
 
     private Section _questSection;
     private Section _hideoutSection;
+    private Section _craftSection;
     private TextMeshProUGUI _emptyLabel;
 
     private readonly List<TextMeshProUGUI> _allLabels = new(64);
@@ -215,9 +217,10 @@ internal sealed class InspectIntelBlock : MonoBehaviour
         // 3. Requirement sections.
         _questSection = new Section(this, transform, template, "任务需求");
         _hideoutSection = new Section(this, transform, template, "藏身处升级");
+        _craftSection = new Section(this, transform, template, "收藏配方");
 
         _emptyLabel = NewText(transform, "Empty", template, 13f, FontStyles.Italic, TextMuted);
-        _emptyLabel.text = "无未完成任务或藏身处升级需求";
+        _emptyLabel.text = "无未完成任务、藏身处升级或收藏配方需求";
     }
 
     private void SyncFontFrom(TMP_Text template)
@@ -264,8 +267,11 @@ internal sealed class InspectIntelBlock : MonoBehaviour
         // ---- Requirement rows ----
         int questShown = 0;
         int hideoutShown = 0;
+        int craftShown = 0;
         int totalNeed = 0;
         int totalFirNeed = 0;
+        int maxToolNeed = 0;
+        int maxToolFirNeed = 0;
         OwnedBreakdown owned = intel.Owned;
 
         bool showFutureQuests = RaidIntelPlugin.InspectShowFutureQuests.Value;
@@ -348,9 +354,57 @@ internal sealed class InspectIntelBlock : MonoBehaviour
             hideoutShown++;
         }
 
+        bool showFavoriteCrafts = RaidIntelPlugin.InspectShowFavoriteCrafts.Value;
+        if (showFavoriteCrafts && intel.FavoriteCraftRequirements != null)
+        {
+            for (int i = 0; i < intel.FavoriteCraftRequirements.Count; i++)
+            {
+                FavoriteCraftReqEntry c = intel.FavoriteCraftRequirements[i];
+                int have = c.OnlyFoundInRaid ? owned.Fir : owned.Total;
+                int need = c.RequiredCount;
+
+                if (c.IsTool)
+                {
+                    if (need > maxToolNeed)
+                    {
+                        maxToolNeed = need;
+                    }
+                    if (c.OnlyFoundInRaid && need > maxToolFirNeed)
+                    {
+                        maxToolFirNeed = need;
+                    }
+                }
+                else
+                {
+                    totalNeed += need;
+                    if (c.OnlyFoundInRaid)
+                    {
+                        totalFirNeed += need;
+                    }
+                }
+
+                Color32 color = have >= need ? StActiveMet : StFavoriteCraft;
+                _craftSection.GetRow(craftShown).Set(
+                    craftShown,
+                    c.IsTool ? "工具" : "配方",
+                    color,
+                    FormatFavoriteCraftName(c),
+                    true,
+                    have,
+                    need,
+                    c.OnlyFoundInRaid);
+                craftShown++;
+            }
+        }
+
+        totalNeed += maxToolNeed;
+        totalFirNeed += maxToolFirNeed;
+
+        int totalShown = questShown + hideoutShown + craftShown;
         _questSection.Finish(questShown);
         _hideoutSection.Finish(hideoutShown);
-        _emptyLabel.gameObject.SetActive(questShown + hideoutShown == 0);
+        _craftSection.Finish(craftShown);
+        _emptyLabel.gameObject.SetActive(totalShown == 0);
 
         // ---- Stat strip ----
         _statTotal.Set(FormatSplit(owned.Total, owned.Fir), owned.Total > 0 ? TextMain : TextMuted);
@@ -365,8 +419,8 @@ internal sealed class InspectIntelBlock : MonoBehaviour
             _statCarry.Set(FormatSplit(owned.CarryTotal, owned.CarryFir), TextMain);
         }
 
-        _statNeed.SetVisible(questShown + hideoutShown > 0);
-        if (questShown + hideoutShown > 0)
+        _statNeed.SetVisible(totalShown > 0);
+        if (totalShown > 0)
         {
             string needText = totalFirNeed > 0
                 ? $"{totalNeed}<size=70%><color={HexFir}>  FIR {totalFirNeed}</color></size>"
@@ -464,6 +518,27 @@ internal sealed class InspectIntelBlock : MonoBehaviour
                 _sb.Append(q.IsPlant ? "  · 已埋 " : "  · 已交 ").Append(q.HandedInCount);
             }
             _sb.Append("</color></size>");
+        }
+
+        return _sb.ToString();
+    }
+
+    private string FormatFavoriteCraftName(FavoriteCraftReqEntry c)
+    {
+        _sb.Clear();
+        _sb.Append(c.ProductName ?? string.Empty);
+        if (c.ProductCount > 1)
+        {
+            _sb.Append(" ×").Append(c.ProductCount);
+        }
+
+        if (!string.IsNullOrEmpty(c.AreaName))
+        {
+            _sb.Append("<size=85%><color=").Append(HexMuted).Append(">  · ")
+               .Append(c.AreaName)
+               .Append(" Lv.")
+               .Append(c.AreaLevel)
+               .Append("</color></size>");
         }
 
         return _sb.ToString();

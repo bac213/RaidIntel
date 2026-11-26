@@ -13,7 +13,7 @@ public sealed class RaidIntelPlugin : BaseUnityPlugin
 {
     public const string PluginGuid = "com.spt.raidintel.client";
     public const string PluginName = "RaidIntel";
-    public const string PluginVersion = "0.1.0";
+    public const string PluginVersion = "0.2.0";
 
     internal static ManualLogSource Log { get; private set; }
     internal static RaidIntelPlugin Instance { get; private set; }
@@ -23,12 +23,14 @@ public sealed class RaidIntelPlugin : BaseUnityPlugin
     internal static ConfigEntry<bool> EnableInRaid;
     internal static ConfigEntry<bool> EnableOutOfRaid;
     internal static ConfigEntry<bool> IncludePlantQuests;
+    internal static ConfigEntry<bool> IncludeFavoriteCraftTools;
 
     // 2. 悬停提示 (Tooltip)
     internal static ConfigEntry<bool> EnableHoverTooltip;
     internal static ConfigEntry<bool> TooltipShowOwned;
     internal static ConfigEntry<bool> TooltipShowActiveQuests;
     internal static ConfigEntry<bool> TooltipShowNextHideout;
+    internal static ConfigEntry<bool> TooltipShowFavoriteCrafts;
     internal static ConfigEntry<bool> TooltipShowFutureSummary;
     internal static ConfigEntry<bool> TooltipShowOwnedWhenNoReq;
     internal static ConfigEntry<int> TooltipMaxLines;
@@ -37,6 +39,7 @@ public sealed class RaidIntelPlugin : BaseUnityPlugin
     internal static ConfigEntry<bool> EnableInspectPanel;
     internal static ConfigEntry<bool> InspectShowFutureQuests;
     internal static ConfigEntry<bool> InspectShowFutureHideout;
+    internal static ConfigEntry<bool> InspectShowFavoriteCrafts;
     internal static ConfigEntry<bool> InspectMergeDescription;
     internal static ConfigEntry<bool> InspectMergeIntoScroll;
     internal static ConfigEntry<bool> InspectResizeWindow;
@@ -82,12 +85,16 @@ public sealed class RaidIntelPlugin : BaseUnityPlugin
             "1. General", "IncludePlantQuests", true,
             catGeneral, "包含埋放/标记类任务",
             "将需要带入战局放置或标记的物品（如信标、摄像头、干扰器、任务埋点物品）纳入任务需求提示。");
+        IncludeFavoriteCraftTools = t.Bind(
+            "1. General", "IncludeFavoriteCraftTools", true,
+            catGeneral, "包含收藏配方工具",
+            "将藏身处收藏配方所需的工具类物品（制造时不消耗，如扳手、螺丝刀、钳子）也纳入材料提示。");
 
         const string catTooltip = "2. 悬停提示 (Tooltip)";
         EnableHoverTooltip = t.Bind(
             "2. Tooltip", "EnableHoverTooltip", true,
             catTooltip, "启用悬停提示追加",
-            "鼠标悬停在物品上时，在原版名称下方追加持有量、当前任务与藏身处下一级需求。");
+            "鼠标悬停在物品上时，在原版名称下方追加持有量、当前任务、藏身处下一级与收藏配方需求。");
         TooltipShowOwned = t.Bind(
             "2. Tooltip", "TooltipShowOwned", true,
             catTooltip, "显示当前拥有数量",
@@ -100,6 +107,10 @@ public sealed class RaidIntelPlugin : BaseUnityPlugin
             "2. Tooltip", "TooltipShowNextHideout", true,
             catTooltip, "显示藏身处下一级需求",
             "在悬停提示中显示藏身处设施下一未建造/未升级等级所需的材料进度。");
+        TooltipShowFavoriteCrafts = t.Bind(
+            "2. Tooltip", "TooltipShowFavoriteCrafts", true,
+            catTooltip, "显示收藏配方材料",
+            "在悬停提示中显示藏身处已收藏制造配方对该物品的材料需求进度。");
         TooltipShowFutureSummary = t.Bind(
             "2. Tooltip", "TooltipShowFutureSummary", true,
             catTooltip, "显示后续需求汇总行",
@@ -149,6 +160,10 @@ public sealed class RaidIntelPlugin : BaseUnityPlugin
             "3. Inspect", "InspectShowFutureHideout", true,
             catInspect, "显示后续更高等级藏身处",
             "在检视窗需求情报卡片中列出超出下一级以外的后续藏身处升级需求。");
+        InspectShowFavoriteCrafts = t.Bind(
+            "3. Inspect", "InspectShowFavoriteCrafts", true,
+            catInspect, "显示收藏配方材料",
+            "在检视窗需求情报卡片中列出藏身处已收藏制造配方对该物品的材料需求。");
 
         t.Advanced = true;
         const string catDebug = "9. 调试";

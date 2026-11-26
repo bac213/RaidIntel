@@ -63,12 +63,36 @@ internal sealed class HideoutReqEntry
     public bool IsNextLevel;
 }
 
+internal sealed class FavoriteCraftReqEntry
+{
+    public string SchemeId;
+    public string AreaName;
+    public int AreaLevel;
+    public string ProductName;
+    public string ProductShortName;
+    public int ProductCount;
+    public int RequiredCount;
+    public bool OnlyFoundInRaid;
+    public bool IsTool;
+    public int FavoriteIndex;
+
+    internal string FormatTagSuffix()
+    {
+        if (IsTool)
+        {
+            return OnlyFoundInRaid ? "（工具·FIR）" : "（工具）";
+        }
+        return OnlyFoundInRaid ? "（FIR）" : string.Empty;
+    }
+}
+
 internal sealed class ItemIntelResult
 {
     public string TemplateId;
     public OwnedBreakdown Owned;
     public IReadOnlyList<QuestReqEntry> QuestRequirements;
     public IReadOnlyList<HideoutReqEntry> HideoutRequirements;
+    public IReadOnlyList<FavoriteCraftReqEntry> FavoriteCraftRequirements;
 }
 
 internal static class InventoryCountHelper

@@ -25,6 +25,7 @@ internal sealed class ItemIntelAggregator
             Owned = new OwnedBreakdown(stashTotal, stashFir, carryTotal, carryFir, inRaid),
             QuestRequirements = QuestRequirementIndex.Instance.Query(item, LifecyclePatch.GetPmcProfile()),
             HideoutRequirements = HideoutRequirementIndex.Instance.Query(tid),
+            FavoriteCraftRequirements = FavoriteCraftRequirementIndex.Instance.Query(tid),
         };
     }
 
@@ -75,6 +76,20 @@ internal sealed class ItemIntelAggregator
             else
             {
                 futureCount++;
+            }
+        }
+
+        if (RaidIntelPlugin.TooltipShowFavoriteCrafts.Value && intel.FavoriteCraftRequirements != null)
+        {
+            for (int i = 0; i < intel.FavoriteCraftRequirements.Count; i++)
+            {
+                FavoriteCraftReqEntry c = intel.FavoriteCraftRequirements[i];
+                int have = c.OnlyFoundInRaid ? intel.Owned.Fir : intel.Owned.Total;
+                int need = c.RequiredCount;
+                string tagSuffix = c.FormatTagSuffix();
+                string color = have >= need ? "#7FD88A" : "#C59CE6";
+                string label = !string.IsNullOrEmpty(c.ProductShortName) ? c.ProductShortName : c.ProductName;
+                currentLines.Add($"<color={color}>收藏·{label} {have}/{need}{tagSuffix}</color>");
             }
         }
 

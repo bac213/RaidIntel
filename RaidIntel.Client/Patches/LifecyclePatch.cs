@@ -71,6 +71,10 @@ internal static class LifecyclePatch
 
         PatchHideoutUpgradeDirty(harmony, "UpgradeZone");
         PatchHideoutUpgradeDirty(harmony, "CompleteUpgradeZone");
+
+        PatchFavoriteSchemeDirty(harmony, nameof(HideoutRepresentation.AddFavoriteScheme));
+        PatchFavoriteSchemeDirty(harmony, nameof(HideoutRepresentation.RemoveFavoriteScheme));
+        PatchFavoriteSchemeDirty(harmony, nameof(HideoutRepresentation.DeInit));
     }
 
     private static void PatchAsyncQuestRefresh(Harmony harmony, string methodName)
@@ -93,6 +97,16 @@ internal static class LifecyclePatch
         }
     }
 
+    private static void PatchFavoriteSchemeDirty(Harmony harmony, string methodName)
+    {
+        MethodInfo method = AccessTools.Method(typeof(HideoutRepresentation), methodName);
+        if (method != null)
+        {
+            harmony.Patch(method, postfix: new HarmonyMethod(typeof(LifecyclePatch), nameof(FavoriteSchemePostfix)));
+            RaidIntelPlugin.DebugLog($"LifecyclePatch: hooked HideoutRepresentation.{methodName}");
+        }
+    }
+
     private static void SetInventoryControllerPostfix(
         HideoutRepresentation __instance,
         InventoryController inventoryController)
@@ -106,6 +120,7 @@ internal static class LifecyclePatch
 
             StashTracker.Instance.AttachMenuController(inventoryController, _pmcProfile);
             HideoutRequirementIndex.Instance.RebuildFromHideout();
+            FavoriteCraftRequirementIndex.Instance.RebuildFromHideout();
             QuestRequirementIndex.Instance.RefreshFromServer();
         }
         catch (Exception ex)
@@ -126,6 +141,7 @@ internal static class LifecyclePatch
 
             StashTracker.Instance.FreezeSnapshotFromProfile(_pmcProfile);
             HideoutRequirementIndex.Instance.RebuildFromHideout();
+            FavoriteCraftRequirementIndex.Instance.RebuildFromHideout();
         }
         catch (Exception ex)
         {
@@ -179,5 +195,10 @@ internal static class LifecyclePatch
     {
         HideoutRequirementIndex.Instance.MarkDirty();
         __result?.ContinueWith(_ => HideoutRequirementIndex.Instance.MarkDirty());
+    }
+
+    private static void FavoriteSchemePostfix()
+    {
+        FavoriteCraftRequirementIndex.Instance.MarkDirty();
     }
 }
